@@ -152,10 +152,10 @@ github.com/dlclark/regexp2 v1.7.0 h1:7lJfhqlPssTb1WQx4yvTHN0uElPEv52sbaECrAQxjAo
 github.com/dlclark/regexp2 v1.7.0/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dunglas/httpsfv v1.0.1 h1:OjTvfzHJuwjuoyUPkDL1lJzcUP//AUd7cWvn1Nvo03w=
 github.com/dunglas/httpsfv v1.0.1/go.mod h1:zID2mqw9mFsnt7YC3vYQ9/cjq30q41W+1AnDwH8TiMg=
-github.com/dunglas/mercure v0.14.6 h1:gJKRCbe3HsQQv32keYwjImP336S4tcGsDN+pdmahnr0=
-github.com/dunglas/mercure v0.14.6/go.mod h1:aE+avSCzis5fEAn5F3zSvIGVhDr2zY0bj4hzgLTJJF8=
-github.com/dunglas/mercure/caddy v0.14.6 h1:9KL+/DLQiw50BMM8xQUDJOhoAXbX5VnPF9CSZBybI5s=
-github.com/dunglas/mercure/caddy v0.14.6/go.mod h1:dVHDsc4nGua5a1QLd1GAeQC+szqfhiQRNhrmqEFo4tM=
+github.com/dunglas/mercure v0.14.7 h1:YvIFz4UolzRF3Fq3RoKzYMHOHCE1+qolL7sELdqzyOM=
+github.com/dunglas/mercure v0.14.7/go.mod h1:aE+avSCzis5fEAn5F3zSvIGVhDr2zY0bj4hzgLTJJF8=
+github.com/dunglas/mercure/caddy v0.14.7 h1:55Dv8Tn9MgAYPf/4BiTcdM9jzQbtdV/Rn1aPR6YEPSw=
+github.com/dunglas/mercure/caddy v0.14.7/go.mod h1:MKzsJS6orjziNWYbgsH3JjoXI3rbufIYCQqyOW1Vsd4=
 github.com/dunglas/vulcain v0.4.3 h1:nVeTK/TCd/SRjg5WE6EPjefhLITppvmxzzjNpLEV9oY=
 github.com/dunglas/vulcain v0.4.3/go.mod h1:sWyMzf5Snl5PAB3T41Zw0nVg75aJoVrHJNrvYIn5YSs=
 github.com/dunglas/vulcain/caddy v0.4.3 h1:PkxBsU5XaguwK3xA3jtAwPbGVHdQPI22BFQYP4lLHeY=
