@@ -1,4 +1,4 @@
-FROM php:8.2-zts-bullseye AS php-base
+FROM php:8.2.6-zts-bullseye AS php
 
 # Note that this image is based on the official PHP image, once https://github.com/php/php-src/pull/10141 is merged, this stage can be removed
 
@@ -32,32 +32,23 @@ RUN apt-get update && \
     && \
     apt-get clean
 
-RUN git clone --depth=1 --single-branch --branch=PHP-8.2 https://github.com/php/php-src.git && \
-    cd php-src && \
-    # --enable-embed is only necessary to generate libphp.so, we don't use this SAPI directly
-    ./buildconf && \
+WORKDIR /usr/src
+
+RUN tar xf php.tar.xz && \
+    cd php-8.2.6 && \
     ./configure \
         --enable-embed \
         --enable-zts \
         --disable-zend-signals \
         --enable-zend-max-execution-timers \
-        # --enable-mysqlnd is included here because it's harder to compile after the fact than extensions are (since it's a plugin for several extensions, not an extension in itself)
         --enable-mysqlnd \
-         # make sure invalid --configure-flags are fatal errors instead of just warnings
         --enable-option-checking=fatal \
-        # https://github.com/docker-library/php/issues/439
         --with-mhash \
-        # https://github.com/docker-library/php/issues/822
         --with-pic \
-        # --enable-ftp is included here because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
         --enable-ftp \
-        # --enable-mbstring is included here because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
         --enable-mbstring \
-        # https://wiki.php.net/rfc/argon2_password_hash
         --with-password-argon2 \
-        # https://wiki.php.net/rfc/libsodium
         --with-sodium=shared \
-        # always build against system sqlite3 (https://github.com/php/php-src/commit/6083a387a81dbbd66d6316a3a12a63f06d5f7109)
         --with-pdo-sqlite=/usr \
         --with-sqlite3=/usr \
         --with-curl \
@@ -65,22 +56,18 @@ RUN git clone --depth=1 --single-branch --branch=PHP-8.2 https://github.com/php/
         --with-openssl \
         --with-readline \
         --with-zlib \
-        # https://github.com/bwoebi/phpdbg-docs/issues/1#issuecomment-163872806 ("phpdbg is primarily a CLI debugger, and is not suitable for debugging an fpm stack.")
         --disable-phpdbg \
         --with-config-file-path="$PHP_INI_DIR" \
         --with-config-file-scan-dir="$PHP_INI_DIR/conf.d" && \
     make -j$(nproc) && \
     make install && \
-    rm -Rf php-src/ && \
-    echo "Creating src archive for building extensions\n" && \
-    tar -c -f /usr/src/php.tar.xz -J /php-src/ && \
-    ldconfig && \
+    rm -Rf php-8.2.6 && \
     php --version
 
-FROM php-base AS builder
+RUN mkdir -p /tmp/lib && cd /usr/lib && \
+    ldd /usr/local/bin/php | grep '=> /usr/lib/' | cut -d' ' -f3 | sed 's#/usr/lib/##g' | xargs -I % cp --parents "%" /tmp/lib/
 
-COPY --from=golang:1.19-bullseye /usr/local/go/bin/go /usr/local/bin/go
-COPY --from=golang:1.19-bullseye /usr/local/go /usr/local/go
+FROM golang:1.20.4-bullseye AS builder
 
 # This is required to link the FrankenPHP binary to the PHP binary
 RUN apt-get update && \
@@ -100,14 +87,12 @@ RUN apt-get update && \
 WORKDIR /go/src/app
 
 COPY go.mod go.sum ./
-RUN go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
+RUN go mod download
 
-RUN mkdir caddy && cd caddy
-COPY caddy/go.mod caddy/go.sum ./caddy/
+COPY ./caddy/go.mod ./caddy/go.sum ./caddy/
+RUN cd caddy && go mod download
 
-RUN cd caddy && go mod graph | awk '{if ($1 !~ "@") print $2}' | xargs go get
-
-COPY *.* ./
+COPY ./*.c ./*.go ./*.h ./*.php ./
 COPY caddy caddy
 COPY C-Thread-Pool C-Thread-Pool
 COPY internal internal
@@ -117,18 +102,18 @@ COPY testdata testdata
 # see https://github.com/docker-library/php/blob/master/8.2/bullseye/zts/Dockerfile#L57-L59 for PHP values
 ENV CGO_LDFLAGS="-lssl -lcrypto -lreadline -largon2 -lcurl -lonig -lz $PHP_LDFLAGS" CGO_CFLAGS=$PHP_CFLAGS CGO_CPPFLAGS=$PHP_CPPFLAGS
 
-RUN cd caddy/frankenphp && \
-    go build && \
-    cp frankenphp /usr/local/bin && \
-    cp /go/src/app/caddy/frankenphp/Caddyfile /etc/Caddyfile
+COPY --from=php /usr/local/include/php/ /usr/local/include/php
+COPY --from=php /usr/local/lib/libphp.* /usr/local/lib
 
-ENTRYPOINT ["/bin/bash","-c"]
+WORKDIR /go/src/app/caddy/frankenphp
 
-FROM php:8.2-zts-bullseye AS final
+RUN go build && \
+    mv ./frankenphp /usr/local/bin/frankenphp && \
+    mv ./Caddyfile /etc/Caddyfile
+
+FROM php:8.2.6-zts-bullseye AS final
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-
-WORKDIR /app
 
 RUN mkdir -p /app/public
 RUN echo '<?php phpinfo();' > /app/public/index.php
@@ -136,13 +121,29 @@ RUN echo '<?php phpinfo();' > /app/public/index.php
 COPY --from=builder /usr/local/bin/frankenphp /usr/local/bin/frankenphp
 COPY --from=builder /etc/Caddyfile /etc/Caddyfile
 
-COPY --from=php-base /usr/local/include/php/ /usr/local/include/php
-COPY --from=php-base /usr/local/lib/libphp.* /usr/local/lib
-COPY --from=php-base /usr/local/lib/php/ /usr/local/lib/php
-COPY --from=php-base /usr/local/php/ /usr/local/php
-COPY --from=php-base /usr/local/bin/ /usr/local/bin
-COPY --from=php-base /usr/src /usr/src
+COPY --from=php /usr/local/include/php/ /usr/local/include/php
+COPY --from=php /usr/local/lib/libphp.* /usr/local/lib
+COPY --from=php /usr/local/lib/php/ /usr/local/lib/php
+COPY --from=php /usr/local/php/ /usr/local/php
+COPY --from=php /usr/local/bin/ /usr/local/bin
+COPY --from=php /usr/src /usr/src
 
 RUN sed -i 's/php/frankenphp run/g' /usr/local/bin/docker-php-entrypoint
 
+WORKDIR /app
+CMD [ "--config", "/etc/Caddyfile" ]
+
+FROM gcr.io/distroless/cc-debian11 AS slim
+
+COPY --from=builder /usr/local/bin/frankenphp /usr/local/bin/frankenphp
+COPY --from=builder /etc/Caddyfile /etc/Caddyfile
+
+COPY --from=php /bin/sh /bin/
+COPY --from=php /lib/ /lib/
+COPY --from=php /tmp/lib/ /usr/lib/
+
+COPY --from=final /app /app
+COPY --from=final /usr/local/bin/docker-php-* /usr/local/bin/php /usr/local/bin/frankenphp /usr/local/bin/
+
+WORKDIR /app
 CMD [ "--config", "/etc/Caddyfile" ]
