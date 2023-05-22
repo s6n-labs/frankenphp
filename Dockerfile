@@ -100,12 +100,15 @@ ENV CGO_LDFLAGS="-lssl -lcrypto -lreadline -largon2 -lcurl -lonig -lz $PHP_LDFLA
 
 COPY --from=php /usr/local/include/php/ /usr/local/include/php
 COPY --from=php /usr/local/lib/libphp.* /usr/local/lib
+RUN ln -s /usr/local/lib/libphp.so /usr/lib/libphp.so
 
 WORKDIR /go/src/app/caddy/frankenphp
 
 RUN go build && \
     mv ./frankenphp /usr/local/bin/frankenphp && \
     mv ./Caddyfile /etc/Caddyfile
+
+WORKDIR /go/src/app
 
 FROM php:8.2.6-zts-bullseye AS final
 
