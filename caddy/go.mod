@@ -7,7 +7,7 @@ replace github.com/dunglas/frankenphp => ../
 require (
 	github.com/caddyserver/caddy/v2 v2.6.4
 	github.com/dunglas/frankenphp v0.0.0-20221103080429-3641552483ba
-	github.com/dunglas/mercure/caddy v0.14.6
+	github.com/dunglas/mercure/caddy v0.14.7
 	github.com/dunglas/vulcain/caddy v0.4.3
 	go.uber.org/zap v1.24.0
 )
@@ -39,7 +39,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/dunglas/httpsfv v1.0.1 // indirect
-	github.com/dunglas/mercure v0.14.6 // indirect
+	github.com/dunglas/mercure v0.14.7 // indirect
 	github.com/dunglas/vulcain v0.4.3 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
