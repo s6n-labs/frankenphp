@@ -1,2 +1,8 @@
-Dockerfile
-Dockerfile.dev
+/.github/
+
+/Dockerfile
+/Dockerfile.*
+/*.hcl
+
+LICENSE
+*.md

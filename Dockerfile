@@ -92,11 +92,7 @@ RUN go mod download
 COPY ./caddy/go.mod ./caddy/go.sum ./caddy/
 RUN cd caddy && go mod download
 
-COPY ./*.c ./*.go ./*.h ./*.php ./
-COPY caddy caddy
-COPY C-Thread-Pool C-Thread-Pool
-COPY internal internal
-COPY testdata testdata
+COPY . .
 
 # todo: automate this?
 # see https://github.com/docker-library/php/blob/master/8.2/bullseye/zts/Dockerfile#L57-L59 for PHP values
